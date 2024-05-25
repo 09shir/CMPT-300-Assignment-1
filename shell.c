@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <sys/wait.h>
 
 #define COMMAND_LENGTH 1024
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
@@ -98,6 +99,14 @@ void read_command(char *buff, char *tokens[], _Bool *in_background)
 }
 
 /**
+ * helper function for printing text
+ */
+void print_string(char text[])
+{
+	write(STDOUT_FILENO, text, strlen(text));
+}
+
+/**
  * Main and Execute Commands
  */
 int main(int argc, char* argv[])
@@ -106,13 +115,17 @@ int main(int argc, char* argv[])
     
 	char input_buffer[COMMAND_LENGTH];
 	char *tokens[NUM_TOKENS];
-    char *cwd = (char*) malloc(sizeof(char) * PATH_MAX);
+
+	char homeDir[PATH_MAX];
+	snprintf(homeDir, sizeof(homeDir), "/home/%s", getenv("USER"));
+	chdir(homeDir);
+
 	while (true) {
 
-        // Problem 2 - Current directory
-        // Get the current working directory
-        if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL) {
-            write(STDOUT_FILENO, cwd, sizeof(char) * PATH_MAX);
+		char *cwd = (char*) malloc(sizeof(char) * PATH_MAX);
+
+		if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
+			print_string(cwd);
         } else {
             perror("getcwd() error");
         }
@@ -120,7 +133,7 @@ int main(int argc, char* argv[])
 		// Get command
 		// Use write because we need to use read() to work with
 		// signals, and read() is incompatible with printf().
-		write(STDOUT_FILENO, "$ ", strlen("$ "));
+		print_string("$ ");
 		_Bool in_background = false;
 		read_command(input_buffer, tokens, &in_background);
 
@@ -131,8 +144,59 @@ int main(int argc, char* argv[])
 		// 	write(STDOUT_FILENO, "\n", strlen("\n"));
 		// }
 		if (in_background) {
-			write(STDOUT_FILENO, "Run in background.", strlen("Run in background."));
-            write(STDOUT_FILENO, "\n", strlen("\n"));
+			print_string("Run in background.\n");
+		}
+
+		// Problem 2 - exit, pwd, cd, help cmds
+		if (strcmp(tokens[0], "exit") == 0){
+			if (tokens[1] != NULL) {
+				print_string("Error: exit does not take any arguments\n");
+				continue;
+			} 
+			free(cwd);
+			exit(0);
+		} 
+		else if (strcmp(tokens[0], "pwd") == 0){
+			if (tokens[1] != NULL) {
+				print_string("Error: pwd does not take any arguments\n");
+				continue;
+			} 
+			print_string(cwd);
+			print_string("\n");
+			continue;
+		} 
+		else if (strcmp(tokens[0], "cd") == 0){
+			if (chdir(tokens[1]) != 0){
+				perror("");
+			}
+			continue;
+		} 
+		else if (strcmp(tokens[0], "help") == 0){
+			if (tokens[1] == NULL){
+				// list all internal commands
+				// for each command, include a short summary on what it does
+			}
+			else if (tokens[2] != NULL) {
+				// display an error message
+			}
+			else if (strcmp(tokens[1], "exit") == 0){
+				print_string("'exit' is a builtin command for exiting shell program");
+			}
+			else if (strcmp(tokens[1], "pwd") == 0){
+				print_string("'pwd' is a builtin command for displaying the current working directory");
+			}
+			else if (strcmp(tokens[1], "cd") == 0){
+				print_string("'cd' is a builtin command for changing the current working directory");
+			}
+			else if (strcmp(tokens[1], "help") == 0){
+				print_string("'help' is a builtin command for displaying help information on internal commands");
+			}
+			else {
+				print_string("'");
+				print_string(tokens[1]);
+				print_string("' is an external command or application");
+			}
+			continue;
 		}
 
         // Problem 1
@@ -142,19 +206,20 @@ int main(int argc, char* argv[])
             perror("fork failed");
             exit(1);
         } else if (pid == 0){
-            execvp(tokens[0], tokens);
-            perror("execvp");
+			execvp(tokens[0], tokens);
+            perror("");
             exit(1);
         } else{
             int status;
             if (!in_background)
                 waitpid(pid, &status, 0);
 
-            write(STDOUT_FILENO, "Completed Child: ", strlen("Completed Child: "));
+			print_string("Completed Child: ");
             char pid_string[20];
-            int pid_len = snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
-            write(STDOUT_FILENO, pid_string, pid_len);
+            snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
+			print_string(pid_string);
         
+
         }
 
 
