@@ -8,9 +8,12 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #define COMMAND_LENGTH 1024
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
+
+#define HISTORY_DEPTH 10
 
 
 /**
@@ -57,6 +60,40 @@ int tokenize_command(char *buff, char *tokens[])
 }
 
 /**
+ * Add command to history
+ */
+void add_command_to_history(const char *command, char history[HISTORY_DEPTH][COMMAND_LENGTH], int *count)
+{
+	// exclude !!, !n, !-
+	if (command[0] == '!'){
+		if (command[1] == '!' || command[1] == '-'){
+			return;
+		}
+		_Bool containsNum = true;
+		for (int i = 1; command[i] != '\0'; i++){
+			if (!isdigit((unsigned char)command[i])) {
+				containsNum = false;
+				break;
+			}
+		}
+		if (containsNum && command[1] != '\0'){
+			return;
+		}
+	}
+	if (*count >= HISTORY_DEPTH){
+		for (int i = 0; i < HISTORY_DEPTH - 1; i++){
+			strcpy(history[i], history[i + 1]);
+		}
+		strncpy(history[HISTORY_DEPTH - 1], command, COMMAND_LENGTH);
+		history[HISTORY_DEPTH - 1][COMMAND_LENGTH - 1] = '\0';
+	} else {
+		strncpy(history[*count], command, COMMAND_LENGTH);
+		history[*count][COMMAND_LENGTH - 1] = '\0';
+	}
+	(*count)++;
+}
+
+/**
  * Read a command from the keyboard into the buffer 'buff' and tokenize it
  * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
  * buff: Buffer allocated by the calling code. Must be at least
@@ -67,16 +104,23 @@ int tokenize_command(char *buff, char *tokens[])
  * in_background: pointer to a boolean variable. Set to true if user entered
  *       an & as their last token; otherwise set to false.
  */
-void read_command(char *buff, char *tokens[], _Bool *in_background)
+void read_command(char *buff, char *tokens[], _Bool *in_background, char history[HISTORY_DEPTH][COMMAND_LENGTH], int *count, _Bool need_input)
 {
 	*in_background = false;
 
-	// Read input
-	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
+	int length;
 
-	if (length < 0) {
-		perror("Unable to read command from keyboard. Terminating.\n");
-		exit(-1);
+	// Read input unless running from history
+	if (need_input){
+		length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
+
+		if (length < 0) {
+			perror("Unable to read command from keyboard. Terminating.\n");
+			exit(-1);
+		}
+	}
+	else{
+		length = sizeof(buff);
 	}
 
 	// Null terminate and strip \n.
@@ -84,6 +128,9 @@ void read_command(char *buff, char *tokens[], _Bool *in_background)
 	if (buff[strlen(buff) - 1] == '\n') {
 		buff[strlen(buff) - 1] = '\0';
 	}
+
+	// Store command in History
+	add_command_to_history(buff, history, count);
 
 	// Tokenize (saving original command string)
 	int token_count = tokenize_command(buff, tokens);
@@ -99,11 +146,36 @@ void read_command(char *buff, char *tokens[], _Bool *in_background)
 }
 
 /**
- * helper function for printing text
+ * Helper function for printing text
  */
 void print_string(char text[])
 {
 	write(STDOUT_FILENO, text, strlen(text));
+}
+
+void execute_command(char* tokens[], _Bool in_background){
+	pid_t pid = fork();
+
+	if (pid == -1){
+		perror("fork failed");
+		exit(1);
+	} else if (pid == 0){
+		execvp(tokens[0], tokens);
+		// execl("/bin/sh", "/bin/sh", "-c", "sleep 2 && echo hi &", (char *) NULL);
+		perror("execvp");
+		exit(1);
+	} else{
+		if (!in_background){
+			int status;
+			waitpid(pid, &status, 0);
+		}
+		print_string("Completed Child: ");
+		char pid_string[20];
+		snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
+		print_string(pid_string);
+	
+
+	}
 }
 
 /**
@@ -120,9 +192,13 @@ int main(int argc, char* argv[])
 	snprintf(homeDir, sizeof(homeDir), "/home/%s", getenv("USER"));
 	chdir(homeDir);
 
+	char history[HISTORY_DEPTH][COMMAND_LENGTH];
+	int cmdCount = 0;
+
 	while (true) {
 
-		char *cwd = (char*) malloc(sizeof(char) * PATH_MAX);
+		// char *cwd = (char*) malloc(sizeof(char) * PATH_MAX);
+		char cwd[PATH_MAX];
 
 		if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
 			print_string(cwd);
@@ -135,7 +211,7 @@ int main(int argc, char* argv[])
 		// signals, and read() is incompatible with printf().
 		print_string("$ ");
 		_Bool in_background = false;
-		read_command(input_buffer, tokens, &in_background);
+		read_command(input_buffer, tokens, &in_background, history, &cmdCount, true);
 
 		// DEBUG: Dump out arguments:
 		// for (int i = 0; tokens[i] != NULL; i++) {
@@ -148,12 +224,14 @@ int main(int argc, char* argv[])
 		}
 
 		// Problem 2 - exit, pwd, cd, help cmds
-		if (strcmp(tokens[0], "exit") == 0){
+		if (tokens[0] == NULL){
+			continue;
+		}
+		else if (strcmp(tokens[0], "exit") == 0){
 			if (tokens[1] != NULL) {
 				print_string("Error: exit does not take any arguments\n");
 				continue;
 			} 
-			free(cwd);
 			exit(0);
 		} 
 		else if (strcmp(tokens[0], "pwd") == 0){
@@ -180,47 +258,69 @@ int main(int argc, char* argv[])
 				// display an error message
 			}
 			else if (strcmp(tokens[1], "exit") == 0){
-				print_string("'exit' is a builtin command for exiting shell program");
-			}
-			else if (strcmp(tokens[1], "pwd") == 0){
-				print_string("'pwd' is a builtin command for displaying the current working directory");
-			}
-			else if (strcmp(tokens[1], "cd") == 0){
-				print_string("'cd' is a builtin command for changing the current working directory");
-			}
-			else if (strcmp(tokens[1], "help") == 0){
-				print_string("'help' is a builtin command for displaying help information on internal commands");
-			}
-			else {
+				print_string("'exit' is a builtin command for exiting shell program\n");
+			} else if (strcmp(tokens[1], "pwd") == 0){
+				print_string("'pwd' is a builtin command for displaying the current working directory\n");
+			} else if (strcmp(tokens[1], "cd") == 0){
+				print_string("'cd' is a builtin command for changing the current working directory]\n");
+			} else if (strcmp(tokens[1], "help") == 0){
+				print_string("'help' is a builtin command for displaying help information on internal commands\n");
+			} else {
 				print_string("'");
 				print_string(tokens[1]);
-				print_string("' is an external command or application");
+				print_string("' is an external command or application\n");
+			}
+			continue;
+		}
+		else if (strcmp(tokens[0], "history") == 0){
+			for (int i = 0; i < (cmdCount < 10 ? cmdCount : HISTORY_DEPTH); i++){
+				char line[20 + COMMAND_LENGTH];
+				sprintf(line, "%d	%s\n", cmdCount - i - 1, history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
+				print_string(line);
+				// print_string(history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
+			}
+			continue;
+		}
+		else if (tokens[0][0] == '!' && tokens[0][1] != '\0') {
+			// !!
+			if (tokens[0][1] == '!' && tokens[0][2] == '\0'){
+				continue;
+			}
+			// !-
+			else if (tokens[0][1] == '-' && tokens[0][2] == '\0'){
+				continue;
+			}
+			// !n
+			_Bool containsNum = true;
+			for (int i = 1; tokens[0][i] != '\0'; i++){
+				if (!isdigit((unsigned char)tokens[0][i])) {
+					containsNum = false;
+					break;
+				}
+			}
+			if (containsNum){
+				// exclude oversize number
+				if (atoi(&tokens[0][1]) > cmdCount - 1 || atoi(&tokens[0][1]) < cmdCount - HISTORY_DEPTH){
+					print_string("Number does not exist in history\n");
+					continue;
+				}
+				// calculate index
+				int index = atoi(&tokens[0][1]);
+				if (cmdCount > HISTORY_DEPTH - 1)
+					index = atoi(&tokens[0][1]) - (cmdCount - HISTORY_DEPTH);
+				read_command(history[index], tokens, &in_background, history, &cmdCount, false);
+				print_string(history[index]);
+				execute_command(tokens, in_background);
+			}
+			else {
+				// display an error
+				print_string("Invalid ! command\n");
 			}
 			continue;
 		}
 
-        // Problem 1
-        pid_t pid = fork();
-
-        if (pid == -1){
-            perror("fork failed");
-            exit(1);
-        } else if (pid == 0){
-			execvp(tokens[0], tokens);
-            perror("");
-            exit(1);
-        } else{
-            int status;
-            if (!in_background)
-                waitpid(pid, &status, 0);
-
-			print_string("Completed Child: ");
-            char pid_string[20];
-            snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
-			print_string(pid_string);
-        
-
-        }
+		// create child to execute cmd
+        execute_command(tokens, in_background);
 
 
 		/**
