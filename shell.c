@@ -69,6 +69,14 @@ int tokenize_command(char *buff, char *tokens[])
 }
 
 /**
+ * Helper function for printing text
+ */
+void print_string(char text[])
+{
+	write(STDOUT_FILENO, text, strlen(text));
+}
+
+/**
  * Add command to history
  */
 void add_command_to_history(const char *command, char history[HISTORY_DEPTH][COMMAND_LENGTH], int *count)
@@ -129,7 +137,7 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 		}
 	}
 	else{
-		length = sizeof(buff);
+		length = strlen(buff) + 1;
 	}
 
 	// Null terminate and strip \n.
@@ -154,15 +162,65 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 	}
 }
 
-/**
- * Helper function for printing text
- */
-void print_string(char text[])
-{
-	write(STDOUT_FILENO, text, strlen(text));
-}
+void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char history[HISTORY_DEPTH][COMMAND_LENGTH], char cwd[PATH_MAX]){
+	// Problem 2 - exit, pwd, cd, help cmds
+	if (strcmp(tokens[0], "exit") == 0){
+		if (tokens[1] != NULL) {
+			print_string("Error: exit does not take any arguments\n");
+			return;
+		} 
+		exit(0);
+	} 
+	else if (strcmp(tokens[0], "pwd") == 0){
+		if (tokens[1] != NULL) {
+			print_string("Error: pwd does not take any arguments\n");
+			return;
+		} 
+		print_string(cwd);
+		print_string("\n");
+		return;
+	} 
+	else if (strcmp(tokens[0], "cd") == 0){
+		if (chdir(tokens[1]) != 0){
+			perror("");
+		}
+		return;
+	} 
+	else if (strcmp(tokens[0], "help") == 0){
+		if (tokens[1] == NULL){
+			print_string("'exit' for exiting the program.\n");
+			print_string("'pwd' for displaying the current working directory.\n");
+			print_string("'cd' for changing the current working directory.\n");
+			print_string("'help' for displaying the help information on internal command.\n");
+		}
+		else if (tokens[2] != NULL) {
+			// display an error message
+		}
+		else if (strcmp(tokens[1], "exit") == 0){
+			print_string("'exit' is a builtin command for exiting shell program\n");
+		} else if (strcmp(tokens[1], "pwd") == 0){
+			print_string("'pwd' is a builtin command for displaying the current working directory\n");
+		} else if (strcmp(tokens[1], "cd") == 0){
+			print_string("'cd' is a builtin command for changing the current working directory]\n");
+		} else if (strcmp(tokens[1], "help") == 0){
+			print_string("'help' is a builtin command for displaying help information on internal commands\n");
+		} else {
+			print_string("'");
+			print_string(tokens[1]);
+			print_string("' is an external command or application\n");
+		}
+		return;
+	}
+	else if (strcmp(tokens[0], "history") == 0){
+		for (int i = 0; i < (*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH); i++){
+			char line[20 + COMMAND_LENGTH];
+			sprintf(line, "%d	%s\n", *cmdCount - i - 1, history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1]);
+			print_string(line);
+			// print_string(history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
+		}
+		return;
+	}
 
-void execute_command(char* tokens[], _Bool in_background){
 	pid_t pid = fork();
 
 	if (pid == -1){
@@ -182,8 +240,6 @@ void execute_command(char* tokens[], _Bool in_background){
 		char pid_string[20];
 		snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
 		print_string(pid_string);
-	
-
 	}
 }
 
@@ -232,69 +288,24 @@ int main(int argc, char* argv[])
 			print_string("Run in background.\n");
 		}
 
-		// Problem 2 - exit, pwd, cd, help cmds
 		if (tokens[0] == NULL){
 			continue;
 		}
-		else if (strcmp(tokens[0], "exit") == 0){
-			if (tokens[1] != NULL) {
-				print_string("Error: exit does not take any arguments\n");
-				continue;
-			} 
-			exit(0);
-		} 
-		else if (strcmp(tokens[0], "pwd") == 0){
-			if (tokens[1] != NULL) {
-				print_string("Error: pwd does not take any arguments\n");
-				continue;
-			} 
-			print_string(cwd);
-			print_string("\n");
-			continue;
-		} 
-		else if (strcmp(tokens[0], "cd") == 0){
-			if (chdir(tokens[1]) != 0){
-				perror("");
-			}
-			continue;
-		} 
-		else if (strcmp(tokens[0], "help") == 0){
-			if (tokens[1] == NULL){
-				print_string("'exit' for exit the program.\n");
-				print_string("'pwd' for display the current working directory.\n");
-				print_string("'cd' for change the current working directory.\n");
-				print_string("'help' for display the help information on internal command.\n");
-			}
-			else if (tokens[2] != NULL) {
-				// display an error message
-			}
-			else if (strcmp(tokens[1], "exit") == 0){
-				print_string("'exit' is a builtin command for exiting shell program\n");
-			} else if (strcmp(tokens[1], "pwd") == 0){
-				print_string("'pwd' is a builtin command for displaying the current working directory\n");
-			} else if (strcmp(tokens[1], "cd") == 0){
-				print_string("'cd' is a builtin command for changing the current working directory]\n");
-			} else if (strcmp(tokens[1], "help") == 0){
-				print_string("'help' is a builtin command for displaying help information on internal commands\n");
-			} else {
-				print_string("'");
-				print_string(tokens[1]);
-				print_string("' is an external command or application\n");
-			}
-			continue;
-		}
-		else if (strcmp(tokens[0], "history") == 0){
-			for (int i = 0; i < (cmdCount < 10 ? cmdCount : HISTORY_DEPTH); i++){
-				char line[20 + COMMAND_LENGTH];
-				sprintf(line, "%d	%s\n", cmdCount - i - 1, history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
-				print_string(line);
-				// print_string(history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
-			}
-			continue;
-		}
-		else if (tokens[0][0] == '!' && tokens[0][1] != '\0') {
+
+		if (tokens[0][0] == '!' && tokens[0][1] != '\0') {
 			// !!
 			if (tokens[0][1] == '!' && tokens[0][2] == '\0'){
+				// check if there's previous command
+				if (cmdCount > 0){
+					int index = cmdCount - 1;
+					if (cmdCount > HISTORY_DEPTH - 1)
+						index = index - (cmdCount - HISTORY_DEPTH);
+					read_command(history[index], tokens, &in_background, history, &cmdCount, false);
+					execute_command(tokens, in_background, &cmdCount, history, cwd);
+				}
+				else{
+					print_string("No previous command exist in history\n");
+				}
 				continue;
 			}
 			// !-
@@ -319,9 +330,10 @@ int main(int argc, char* argv[])
 				int index = atoi(&tokens[0][1]);
 				if (cmdCount > HISTORY_DEPTH - 1)
 					index = atoi(&tokens[0][1]) - (cmdCount - HISTORY_DEPTH);
-				read_command(history[index], tokens, &in_background, history, &cmdCount, false);
 				print_string(history[index]);
-				execute_command(tokens, in_background);
+				read_command(history[index], tokens, &in_background, history, &cmdCount, false);
+				print_string("\n");
+				execute_command(tokens, in_background, &cmdCount, history, cwd);
 			}
 			else {
 				// display an error
@@ -330,8 +342,8 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		// create child to execute cmd
-        execute_command(tokens, in_background);
+		// execute cmd
+        execute_command(tokens, in_background, &cmdCount, history, cwd);
 
 
 		/**
