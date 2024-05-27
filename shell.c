@@ -260,8 +260,10 @@ int main(int argc, char* argv[])
 		} 
 		else if (strcmp(tokens[0], "help") == 0){
 			if (tokens[1] == NULL){
-				// list all internal commands
-				// for each command, include a short summary on what it does
+				print_string("'exit' for exit the program.\n");
+				print_string("'pwd' for display the current working directory.\n");
+				print_string("'cd' for change the current working directory.\n");
+				print_string("'help' for display the help information on internal command.\n");
 			}
 			else if (tokens[2] != NULL) {
 				// display an error message
