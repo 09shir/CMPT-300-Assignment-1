@@ -165,10 +165,9 @@ void execute_command(char* tokens[], _Bool in_background){
 		perror("execvp");
 		exit(1);
 	} else{
-		if (!in_background){
-			int status;
-			waitpid(pid, &status, 0);
-		}
+		int status;
+		waitpid(pid, &status, 0);
+
 		print_string("Completed Child: ");
 		char pid_string[20];
 		snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
@@ -219,9 +218,7 @@ int main(int argc, char* argv[])
 		// 	write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
 		// 	write(STDOUT_FILENO, "\n", strlen("\n"));
 		// }
-		if (in_background) {
-			print_string("Run in background.\n");
-		}
+
 
 		// Problem 2 - exit, pwd, cd, help cmds
 		if (tokens[0] == NULL){
