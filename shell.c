@@ -37,23 +37,32 @@ int tokenize_command(char *buff, char *tokens[])
 	_Bool in_token = false;
 	int num_chars = strnlen(buff, COMMAND_LENGTH);
 	for (int i = 0; i < num_chars; i++) {
-		switch (buff[i]) {
-		// Handle token delimiters (ends):
-		case ' ':
-		case '\t':
-		case '\n':
-			buff[i] = '\0';
-			in_token = false;
-			break;
+		if (i>0 && buff[i]=='\\' && buff[i+1] == ' ' ){
+			for(int j=i; j<num_chars; j++) {
+				buff[j] = buff[j+1];
+				}
+			i++; // skip "\ "
+		}
+		else{
+			switch (buff[i]) {
+			// Handle token delimiters (ends):
+			case ' ':
+			case '\t':
+			case '\n':
+				buff[i] = '\0';
+				in_token = false;	
+				break;
 
-		// Handle other characters (may be start)
-		default:
-			if (!in_token) {
-				tokens[token_count] = &buff[i];
-				token_count++;
-				in_token = true;
+			// Handle other characters (may be start)
+			default:
+				if (!in_token) {
+					tokens[token_count] = &buff[i];
+					token_count++;
+					in_token = true;
+				}
 			}
 		}
+		
 	}
 	tokens[token_count] = NULL;
 	return token_count;
@@ -165,9 +174,10 @@ void execute_command(char* tokens[], _Bool in_background){
 		perror("execvp");
 		exit(1);
 	} else{
-		int status;
-		waitpid(pid, &status, 0);
-
+		if (!in_background){
+			int status;
+			waitpid(pid, &status, 0);
+		}
 		print_string("Completed Child: ");
 		char pid_string[20];
 		snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
@@ -218,7 +228,9 @@ int main(int argc, char* argv[])
 		// 	write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
 		// 	write(STDOUT_FILENO, "\n", strlen("\n"));
 		// }
-
+		if (in_background) {
+			print_string("Run in background.\n");
+		}
 
 		// Problem 2 - exit, pwd, cd, help cmds
 		if (tokens[0] == NULL){
