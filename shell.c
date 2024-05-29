@@ -9,6 +9,10 @@
 #include <limits.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <signal.h>
+#include <unistd.h>
+
+
 
 #define COMMAND_LENGTH 1024
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
@@ -243,6 +247,14 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 	}
 }
 
+void handle_SIGINT(int sig)
+{
+	print_string("\n'exit' for exiting the program.\n");
+	print_string("'pwd' for displaying the current working directory.\n");
+	print_string("'cd' for changing the current working directory.\n");
+	print_string("'help' for displaying the help information on internal command.\n");
+    // exit(0);
+}
 /**
  * Main and Execute Commands
  */
@@ -259,6 +271,14 @@ int main(int argc, char* argv[])
 
 	char history[HISTORY_DEPTH][COMMAND_LENGTH];
 	int cmdCount = 0;
+
+    // Set up the signal handler
+    struct sigaction handler;
+    handler.sa_handler = handle_SIGINT;
+    handler.sa_flags = 0;
+    sigemptyset(&handler.sa_mask);
+    sigaction(SIGINT, &handler, NULL);
+
 
 	while (true) {
 
