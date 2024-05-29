@@ -45,7 +45,6 @@ int tokenize_command(char *buff, char *tokens[])
 			for(int j=i; j<num_chars; j++) {
 				buff[j] = buff[j+1];
 				}
-			i++; // skip "\ "
 		}
 		else{
 			switch (buff[i]) {
@@ -218,6 +217,15 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 	else if (strcmp(tokens[0], "history") == 0){
 		for (int i = 0; i < (*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH); i++){
 			char line[20 + COMMAND_LENGTH];
+			char* linetoprocee = history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1];
+			char* character1;
+			char* character2;
+			for(int j=0;j<COMMAND_LENGTH;j++){
+				character1= linetoprocee+j;
+				character2= linetoprocee+j+1;
+				if(*character1=='\0' && *character2!='\0') *character1=' ';
+			}
+
 			sprintf(line, "%d	%s\n", *cmdCount - i - 1, history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1]);
 			print_string(line);
 			// print_string(history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
