@@ -366,7 +366,8 @@ int main(int argc, char* argv[])
 				if (cmdCount > HISTORY_DEPTH - 1)
 					index = atoi(&tokens[0][1]) - (cmdCount - HISTORY_DEPTH);
 				print_string(history[index]);
-				read_command(history[index], tokens, &in_background, history, &cmdCount, false);
+				strcpy(input_buffer, history[index]);
+				read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 				print_string("\n");
 				execute_command(tokens, in_background, &cmdCount, history, cwd);
 			}
