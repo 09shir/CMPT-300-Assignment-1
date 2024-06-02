@@ -198,6 +198,7 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		}
 		else if (tokens[2] != NULL) {
 			// display an error message
+			print_string("Error: help does not take more than one argument\n");
 		}
 		else if (strcmp(tokens[1], "exit") == 0){
 			print_string("'exit' is a builtin command for exiting shell program\n");
