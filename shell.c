@@ -339,6 +339,12 @@ int main(int argc, char* argv[])
 			}
 			// !-
 			else if (tokens[0][1] == '-' && tokens[0][2] == '\0'){
+				if (cmdCount > 0) {
+					for (int i = 0; i < HISTORY_DEPTH; i++) {
+						history[i][0] = '\0'; // set first character of each history entry to null
+						cmdCount = 0;
+					}
+				}
 				continue;
 			}
 			// !n
