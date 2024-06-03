@@ -189,7 +189,7 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		// 	perror("");
 		// }
 		// return;
-		char *new_dir = NULL;
+		char new_dir[PATH_MAX] = "";
 
     		if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
       			new_dir = getenv("HOME");
