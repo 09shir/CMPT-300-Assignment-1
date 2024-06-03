@@ -184,8 +184,34 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		return;
 	} 
 	else if (strcmp(tokens[0], "cd") == 0){
-		if (chdir(tokens[1]) != 0){
-			perror("");
+		// if (chdir(tokens[1]) != 0){
+		// 	perror("");
+		// }
+		// return;
+		char *new_dir = NULL;
+
+    		if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
+      			new_dir = getenv("HOME");
+    		} else if (strcmp(tokens[1], "~") == 0) {
+			new_dir = getenv("HOME");
+		} else if (strcmp(tokens[1], "-") == 0) {
+			if (strcmp(prev_dir, "") != 0) {
+				new_dir = prev_dir;
+			} else {
+		        	print_string("Error: No previous directory\n");
+		        	return;
+		      	}
+		} else if (tokens[1][0] == '~') {
+		      snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
+		} else {
+		      new_dir = tokens[1];
+		}
+		
+		if (new_dir && chdir(new_dir) == 0) {
+		      strcpy(prev_dir, cwd);
+		      getcwd(cwd, PATH_MAX);
+		} else {
+		      perror("cd");
 		}
 		return;
 	} 
