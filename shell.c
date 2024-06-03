@@ -167,6 +167,7 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 
 void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char history[HISTORY_DEPTH][COMMAND_LENGTH], char cwd[PATH_MAX]){
 	// Problem 2 - exit, pwd, cd, help cmds
+	static char prev_dir[PATH_MAX] = "";
 	if (strcmp(tokens[0], "exit") == 0){
 		if (tokens[1] != NULL) {
 			print_string("Error: exit does not take any arguments\n");
