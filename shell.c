@@ -201,7 +201,9 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 	      		if (strcmp(prev_dir, "") != 0) {
 				strcpy(new_dir, prev_dir);
 				change_dir_result = chdir(new_dir);
-	      		}
+	      		} else {
+				return;
+			}
 	   	} else if (tokens[1][0] == '~') {
 	      		snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
 	      		change_dir_result = chdir(new_dir);
