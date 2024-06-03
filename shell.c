@@ -197,7 +197,6 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			print_string("'help' for displaying the help information on internal command.\n");
 		}
 		else if (tokens[2] != NULL) {
-			// display an error message
 			print_string("Error: help does not take more than one argument\n");
 		}
 		else if (strcmp(tokens[1], "exit") == 0){
@@ -219,17 +218,16 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		for (int i = 0; i < (*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH); i++){
 			char line[20 + COMMAND_LENGTH];
 			char* linetoprocee = history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1];
-			char* character1;
-			char* character2;
-			for(int j=0;j<COMMAND_LENGTH;j++){
-				character1= linetoprocee+j;
-				character2= linetoprocee+j+1;
-				if(*character1=='\0' && *character2!='\0') *character1=' ';
-			}
+			// char* character1;
+			// char* character2;
+			// for(int j=0;j<COMMAND_LENGTH;j++){
+			// 	character1= linetoprocee+j;
+			// 	character2= linetoprocee+j+1;
+			// 	if(*character1=='\0' && *character2!='\0') *character1=' ';
+			// }
 
-			sprintf(line, "%d	%s\n", *cmdCount - i - 1, history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1]);
+			sprintf(line, "%d	%s\n", *cmdCount - i - 1, linetoprocee);
 			print_string(line);
-			// print_string(history[(cmdCount < 10 ? cmdCount : HISTORY_DEPTH) - i - 1]);
 		}
 		return;
 	}
@@ -249,10 +247,10 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			int status;
 			waitpid(pid, &status, 0);
 		}
-		print_string("Completed Child: ");
-		char pid_string[20];
-		snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
-		print_string(pid_string);
+		// print_string("Completed Child: ");
+		// char pid_string[20];
+		// snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
+		// print_string(pid_string);
 	}
 }
 
