@@ -188,9 +188,6 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		return;
 	} 
 	else if (strcmp(tokens[0], "cd") == 0){
-		// if (chdir(tokens[1]) != 0){
-		// 	perror("");
-		// }
 	    	int change_dir_result = -1;
 	    	char new_dir[PATH_MAX];
 	
@@ -208,6 +205,10 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 				return;
 			}
 	   	} else if (tokens[1][0] == '~') {
+			if (tokens[2] != NULL) {
+				print_string("Error: 'cd ~/{folder_name}' is unable to take more than one parameter.\n");
+				return;
+			}
 	      		snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
 	      		change_dir_result = chdir(new_dir);
 	    	} else {
