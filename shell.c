@@ -359,7 +359,8 @@ int main(int argc, char* argv[])
 					int index = cmdCount - 1;
 					if (cmdCount > HISTORY_DEPTH - 1)
 						index = index - (cmdCount - HISTORY_DEPTH);
-					read_command(history[index], tokens, &in_background, history, &cmdCount, false);
+					strcpy(input_buffer, history[index]);
+					read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 					execute_command(tokens, in_background, &cmdCount, history, cwd);
 				}
 				else{
