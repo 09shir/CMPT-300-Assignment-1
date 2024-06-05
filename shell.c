@@ -145,8 +145,10 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 
 	// Null terminate and strip \n.
 	buff[length] = '\0';
-	if (buff[strlen(buff) - 1] == '\n') {
-		buff[strlen(buff) - 1] = '\0';
+	if (buff[0] != '\0'){
+		if (buff[strlen(buff) - 1] == '\n') {
+			buff[strlen(buff) - 1] = '\0';
+		}
 	}
 
 	// Store command in History
@@ -313,7 +315,10 @@ void handle_SIGINT(int sig)
 	print_string("'pwd' for displaying the current working directory.\n");
 	print_string("'cd' for changing the current working directory.\n");
 	print_string("'help' for displaying the help information on internal command.\n");
-    // exit(0);
+    	print_string("'history' is a builtin command for showing command history\n");
+	print_string("'!n' is an internal command for executing the n-th command from history\n");
+	print_string("'!!' is an internal command for executing the last command from history\n");
+	print_string("'!-' is an internal command for clearing command list history\n");
 }
 /**
  * Main and Execute Commands
@@ -380,6 +385,8 @@ int main(int argc, char* argv[])
 					int index = cmdCount - 1;
 					if (cmdCount > HISTORY_DEPTH - 1)
 						index = index - (cmdCount - HISTORY_DEPTH);
+					print_string(history[index]);
+					print_string("\n");
 					strcpy(input_buffer, history[index]);
 					read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 					execute_command(tokens, in_background, &cmdCount, history, cwd);
@@ -422,9 +429,9 @@ int main(int argc, char* argv[])
 				if (cmdCount > HISTORY_DEPTH - 1)
 					index = atoi(&tokens[0][1]) - (cmdCount - HISTORY_DEPTH);
 				print_string(history[index]);
+				print_string("\n");
 				strcpy(input_buffer, history[index]);
 				read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
-				print_string("\n");
 				execute_command(tokens, in_background, &cmdCount, history, cwd);
 			}
 			else {
