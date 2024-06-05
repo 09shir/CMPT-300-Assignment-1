@@ -41,7 +41,13 @@ int tokenize_command(char *buff, char *tokens[])
 	_Bool in_token = false;
 	int num_chars = strnlen(buff, COMMAND_LENGTH);
 	for (int i = 0; i < num_chars; i++) {
-		if (i>0 && buff[i]=='\\' && buff[i+1] == ' ' ){
+		// Handle other characters (may be start)
+		if (!in_token) {
+			tokens[token_count] = &buff[i];
+			token_count++;
+			in_token = true;
+		}
+		if (i>0 && buff[i]=='\\'){
 			for(int j=i; j<num_chars; j++) {
 				buff[j] = buff[j+1];
 				}
@@ -55,16 +61,9 @@ int tokenize_command(char *buff, char *tokens[])
 				buff[i] = '\0';
 				in_token = false;	
 				break;
-
-			// Handle other characters (may be start)
-			default:
-				if (!in_token) {
-					tokens[token_count] = &buff[i];
-					token_count++;
-					in_token = true;
-				}
 			}
 		}
+
 		
 	}
 	tokens[token_count] = NULL;
@@ -217,18 +216,25 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			}
 	      		snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
 	      		change_dir_result = chdir(new_dir);
-	    	} else {
-	      		// change to the specified directory
-	      		change_dir_result = chdir(tokens[1]);
-	    	}
-	    	if (change_dir_result == 0) {
-	      		// update prev_dir if chdir was successful
-	      		strcpy(prev_dir, cwd);
-	      		// update the current working directory
-	      		getcwd(cwd, PATH_MAX);
-	    	} else {
-	      		perror("cd");
-	    	}
+		} else {
+			// change to the specified directory
+			if(tokens[2] == NULL){
+				change_dir_result = chdir(tokens[1]);
+			}
+			else{
+				print_string("Error: 'cd' is unable to take more than one parameter.\n");
+				return;
+			}
+
+		}
+		if (change_dir_result == 0) {
+			// update prev_dir if chdir was successful
+			strcpy(prev_dir, cwd);
+			// update the current working directory
+			getcwd(cwd, PATH_MAX);
+		} else {
+			perror("cd");
+		}
 		return;
 	} 
 	else if (strcmp(tokens[0], "help") == 0){
@@ -380,6 +386,10 @@ int main(int argc, char* argv[])
 		if (tokens[0][0] == '!' && tokens[0][1] != '\0') {
 			// !!
 			if (tokens[0][1] == '!' && tokens[0][2] == '\0'){
+				if (tokens[1] != NULL) {
+					print_string("Error: '!!' is unable to take any parameters.\n");
+					continue;
+				}
 				// check if there's previous command
 				if (cmdCount > 0){
 					int index = cmdCount - 1;
