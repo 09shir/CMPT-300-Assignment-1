@@ -230,6 +230,10 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			print_string("'pwd' for displaying the current working directory.\n");
 			print_string("'cd' for changing the current working directory.\n");
 			print_string("'help' for displaying the help information on internal command.\n");
+			print_string("'history' is a builtin command for showing command history\n");
+			print_string("'!n' is an internal command for executing the n-th command from history\n");
+			print_string("'!!' is an internal command for executing the last command from history\n");
+			print_string("'!-' is an internal command for clearing command list history\n");
 		}
 		else if (tokens[2] != NULL) {
 			print_string("Error: help does not take more than one argument\n");
@@ -242,7 +246,16 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			print_string("'cd' is a builtin command for changing the current working directory]\n");
 		} else if (strcmp(tokens[1], "help") == 0){
 			print_string("'help' is a builtin command for displaying help information on internal commands\n");
-		} else {
+		} else if (strcmp(tokens[1], "history" == 0)){
+			print_string("'history' is a builtin command for showing command history\n");
+		} else if (strcmp(tokens[1], "!n" == 0)){
+			print_string("'!n' is an internal command for executing the n-th command from history\n");
+		} else if (strcmp(tokens[1], "!!" == 0)){
+			print_string("'!!' is an internal command for executing the last command from history\n");
+		} else if (strcmp(tokens[1], "!-" == 0)){
+			print_string("'!-' is an internal command for clearing command list history\n");
+		}
+		else {
 			print_string("'");
 			print_string(tokens[1]);
 			print_string("' is an external command or application\n");
