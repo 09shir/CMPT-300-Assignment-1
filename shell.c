@@ -198,7 +198,11 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 	      		strcpy(new_dir, getenv("HOME"));
 	      		change_dir_result = chdir(new_dir);
 	   	} else if (strcmp(tokens[1], "-") == 0) {
-	      		if (strcmp(prev_dir, "") != 0) {
+			if (tokens[2] != NULL) {
+				print_string("Error: 'cd -' is unable to take more than one parameter.\n");
+				return;
+			}
+	      		else if (strcmp(prev_dir, "") != 0) {
 				strcpy(new_dir, prev_dir);
 				change_dir_result = chdir(new_dir);
 	      		} else {
