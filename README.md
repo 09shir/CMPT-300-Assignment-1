@@ -4,7 +4,7 @@
 
 Allen Chen: 
 - Finished Problem 4 (Bonus)
-- Issues fixes during development
+- Identified issues in problem 2 and 3
 - QA work following manual test plan
 - Resolved QA bugs
 
