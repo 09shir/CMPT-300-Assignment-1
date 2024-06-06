@@ -20,10 +20,6 @@
 #define HISTORY_DEPTH 10
 
 
-/**
- * Command Input and Processing
- */
-
 /*
  * Tokenize the string in 'buff' into 'tokens'.
  * buff: Character array containing string to tokenize.
@@ -63,8 +59,6 @@ int tokenize_command(char *buff, char *tokens[])
 				break;
 			}
 		}
-
-		
 	}
 	tokens[token_count] = NULL;
 	return token_count;
@@ -72,6 +66,7 @@ int tokenize_command(char *buff, char *tokens[])
 
 /**
  * Helper function for printing text
+ * text[]: Array of characters to be printed
  */
 void print_string(char text[])
 {
@@ -80,6 +75,9 @@ void print_string(char text[])
 
 /**
  * Add command to history
+ * command: Pointer to the first char of the command inputted
+ * history[][]: Array of strings that stores the past 10 commands executed
+ * count: Pointer to an integer that keeps track of total command count
  */
 void add_command_to_history(const char *command, char history[HISTORY_DEPTH][COMMAND_LENGTH], int *count)
 {
@@ -166,6 +164,16 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 	}
 }
 
+/**
+ * Executes command
+ * tokens[]: Array of strings that each stores a word of the command inputted
+ * in_background: Boolean value to keep track of whether tokens[] is a 
+ * 		background process
+ * cmdCount: Pointer to an integer that keeps track of total command count
+ * history[][]: Array of strings that stores the past 10 commands executed
+ * cwd[]: Array of characters to store current work directory for cd 
+ * 		commands
+ */
 void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char history[HISTORY_DEPTH][COMMAND_LENGTH], char cwd[PATH_MAX]){
 	if (tokens[0] == NULL){
 		return;
@@ -178,8 +186,7 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			return;
 		} 
 		exit(0);
-	} 
-	else if (strcmp(tokens[0], "pwd") == 0){
+	} else if (strcmp(tokens[0], "pwd") == 0){
 		if (tokens[1] != NULL) {
 			print_string("Error: pwd does not take any arguments\n");
 			return;
@@ -187,23 +194,21 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		print_string(cwd);
 		print_string("\n");
 		return;
-	} 
-	else if (strcmp(tokens[0], "cd") == 0){
-	    	int change_dir_result = -1;
-	    	char new_dir[PATH_MAX];
-	
-	    	if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
-	      		strcpy(new_dir, getenv("HOME"));
-	      		change_dir_result = chdir(new_dir);
+	} else if (strcmp(tokens[0], "cd") == 0){
+		int change_dir_result = -1;
+		char new_dir[PATH_MAX];
+
+		if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
+			strcpy(new_dir, getenv("HOME"));
+			change_dir_result = chdir(new_dir);
 	   	} else if (strcmp(tokens[1], "~") == 0) {
-	      		strcpy(new_dir, getenv("HOME"));
-	      		change_dir_result = chdir(new_dir);
+			strcpy(new_dir, getenv("HOME"));
+			change_dir_result = chdir(new_dir);
 	   	} else if (strcmp(tokens[1], "-") == 0) {
 			if (tokens[2] != NULL) {
 				print_string("Error: 'cd -' is unable to take more than one parameter.\n");
 				return;
-			}
-	      		else if (strcmp(prev_dir, "") != 0) {
+			} else if (strcmp(prev_dir, "") != 0) {
 				strcpy(new_dir, prev_dir);
 				change_dir_result = chdir(new_dir);
 	      		} else {
@@ -214,8 +219,8 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 				print_string("Error: 'cd ~/{folder_name}' is unable to take more than one parameter.\n");
 				return;
 			}
-	      		snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
-	      		change_dir_result = chdir(new_dir);
+			snprintf(new_dir, sizeof(new_dir), "%s%s", getenv("HOME"), tokens[1] + 1);
+			change_dir_result = chdir(new_dir);
 		} else {
 			// change to the specified directory
 			if(tokens[2] == NULL){
@@ -225,7 +230,6 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 				print_string("Error: 'cd' is unable to take more than one parameter.\n");
 				return;
 			}
-
 		}
 		if (change_dir_result == 0) {
 			// update prev_dir if chdir was successful
@@ -236,8 +240,7 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			perror("cd");
 		}
 		return;
-	} 
-	else if (strcmp(tokens[0], "help") == 0){
+	} else if (strcmp(tokens[0], "help") == 0){
 		if (tokens[1] == NULL){
 			print_string("'exit' for exiting the program.\n");
 			print_string("'pwd' for displaying the current working directory.\n");
@@ -247,11 +250,9 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			print_string("'!n' is an internal command for executing the n-th command from history\n");
 			print_string("'!!' is an internal command for executing the last command from history\n");
 			print_string("'!-' is an internal command for clearing command list history\n");
-		}
-		else if (tokens[2] != NULL) {
+		} else if (tokens[2] != NULL) {
 			print_string("Error: help does not take more than one argument\n");
-		}
-		else if (strcmp(tokens[1], "exit") == 0){
+		} else if (strcmp(tokens[1], "exit") == 0){
 			print_string("'exit' is a builtin command for exiting shell program\n");
 		} else if (strcmp(tokens[1], "pwd") == 0){
 			print_string("'pwd' is a builtin command for displaying the current working directory\n");
@@ -267,27 +268,17 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			print_string("'!!' is an internal command for executing the last command from history\n");
 		} else if (strcmp(tokens[1], "!-") == 0){
 			print_string("'!-' is an internal command for clearing command list history\n");
-		}
-		else {
+		} else {
 			print_string("'");
 			print_string(tokens[1]);
 			print_string("' is an external command or application\n");
 		}
 		return;
-	}
-	else if (strcmp(tokens[0], "history") == 0){
+	} else if (strcmp(tokens[0], "history") == 0){
 		for (int i = 0; i < (*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH); i++){
 			char line[20 + COMMAND_LENGTH];
-			char* linetoprocee = history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1];
-			// char* character1;
-			// char* character2;
-			// for(int j=0;j<COMMAND_LENGTH;j++){
-			// 	character1= linetoprocee+j;
-			// 	character2= linetoprocee+j+1;
-			// 	if(*character1=='\0' && *character2!='\0') *character1=' ';
-			// }
-
-			sprintf(line, "%d	%s\n", *cmdCount - i - 1, linetoprocee);
+			char* lineToProcess = history[(*cmdCount < 10 ? *cmdCount : HISTORY_DEPTH) - i - 1];
+			sprintf(line, "%d	%s\n", *cmdCount - i - 1, lineToProcess);
 			print_string(line);
 		}
 		return;
@@ -300,7 +291,6 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 		exit(1);
 	} else if (pid == 0){
 		execvp(tokens[0], tokens);
-		// execl("/bin/sh", "/bin/sh", "-c", "sleep 2 && echo hi &", (char *) NULL);
 		perror("execvp");
 		exit(1);
 	} else{
@@ -308,10 +298,12 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			int status;
 			waitpid(pid, &status, 0);
 		}
-		// print_string("Completed Child: ");
-		// char pid_string[20];
-		// snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
-		// print_string(pid_string);
+		else{
+			print_string("Process ID: ");
+			char pid_string[20];
+			snprintf(pid_string, sizeof(pid_string), "%d\n", pid);
+			print_string(pid_string);
+		}
 	}
 }
 
@@ -321,18 +313,17 @@ void handle_SIGINT(int sig)
 	print_string("'pwd' for displaying the current working directory.\n");
 	print_string("'cd' for changing the current working directory.\n");
 	print_string("'help' for displaying the help information on internal command.\n");
-    	print_string("'history' is a builtin command for showing command history\n");
+	print_string("'history' is a builtin command for showing command history\n");
 	print_string("'!n' is an internal command for executing the n-th command from history\n");
 	print_string("'!!' is an internal command for executing the last command from history\n");
 	print_string("'!-' is an internal command for clearing command list history\n");
 }
+
 /**
  * Main and Execute Commands
  */
 int main(int argc, char* argv[])
 {
-    // while (waitpid(-1, NULL, WNOHANG) > 0);
-    
 	char input_buffer[COMMAND_LENGTH];
 	char *tokens[NUM_TOKENS];
 
@@ -350,10 +341,8 @@ int main(int argc, char* argv[])
     sigemptyset(&handler.sa_mask);
     sigaction(SIGINT, &handler, NULL);
 
-
 	while (true) {
 
-		// char *cwd = (char*) malloc(sizeof(char) * PATH_MAX);
 		char cwd[PATH_MAX];
 
 		if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
@@ -369,12 +358,6 @@ int main(int argc, char* argv[])
 		_Bool in_background = false;
 		read_command(input_buffer, tokens, &in_background, history, &cmdCount, true);
 
-		// DEBUG: Dump out arguments:
-		// for (int i = 0; tokens[i] != NULL; i++) {
-		// 	write(STDOUT_FILENO, "   Token: ", strlen("   Token: "));
-		// 	write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
-		// 	write(STDOUT_FILENO, "\n", strlen("\n"));
-		// }
 		if (in_background) {
 			print_string("Run in background.\n");
 		}
@@ -414,7 +397,7 @@ int main(int argc, char* argv[])
 				}
 				else if (cmdCount > 0) {
 					for (int i = 0; i < HISTORY_DEPTH; i++) {
-						history[i][0] = '\0'; // set first character of each history entry to null
+						history[i][0] = '\0'; 
 						cmdCount = 0;
 					}
 				}
@@ -445,15 +428,12 @@ int main(int argc, char* argv[])
 				execute_command(tokens, in_background, &cmdCount, history, cwd);
 			}
 			else {
-				// display an error
 				print_string("Invalid ! command\n");
 			}
 			continue;
 		}
 
-		// execute cmd
         execute_command(tokens, in_background, &cmdCount, history, cwd);
-
 
 		/**
 		 * Steps For Basic Shell:
@@ -463,7 +443,6 @@ int main(int argc, char* argv[])
 		 *    child to finish. Otherwise, parent loops back to
 		 *    read_command() again immediately.
 		 */
-
 	}
 	return 0;
 }
