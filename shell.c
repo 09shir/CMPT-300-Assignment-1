@@ -1,6 +1,3 @@
-// Shell starter file
-// You may make any changes to any part of this file.
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -46,7 +43,7 @@ int tokenize_command(char *buff, char *tokens[])
 		if (i>0 && buff[i]=='\\'){
 			for(int j=i; j<num_chars; j++) {
 				buff[j] = buff[j+1];
-				}
+			}
 		}
 		else{
 			switch (buff[i]) {
@@ -346,11 +343,11 @@ int main(int argc, char* argv[])
 	char history[HISTORY_DEPTH][COMMAND_LENGTH];
 	int cmdCount = 0;
 
-    // Set up the signal handler
-    struct sigaction handler;
-    handler.sa_handler = handle_SIGINT;
-    handler.sa_flags = SA_RESTART;
-    sigemptyset(&handler.sa_mask);
+    	// Set up the signal handler
+    	struct sigaction handler;
+    	handler.sa_handler = handle_SIGINT;
+    	handler.sa_flags = SA_RESTART;
+    	sigemptyset(&handler.sa_mask);
 	if (sigaction(SIGINT, &handler, NULL) == -1) {
 		perror("sigaction");
 		exit(1);
@@ -367,9 +364,9 @@ int main(int argc, char* argv[])
 			} else {
 				sigint_received = 0;
 			}
-        } else {
-            perror("getcwd() error");
-        }
+	        } else {
+	            perror("getcwd() error");
+	        }
 
 		// Get command
 		// Use write because we need to use read() to work with
@@ -402,8 +399,7 @@ int main(int argc, char* argv[])
 					strcpy(input_buffer, history[index]);
 					read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 					execute_command(tokens, in_background, &cmdCount, history, cwd);
-				}
-				else{
+				} else{
 					print_string("No previous command exist in history\n");
 				}
 				continue;
@@ -413,8 +409,7 @@ int main(int argc, char* argv[])
 				if (tokens[1] != NULL) {
 					print_string("Error: '!-' is unable to take any parameters.\n");
 					continue;
-				}
-				else if (cmdCount > 0) {
+				} else if (cmdCount > 0) {
 					for (int i = 0; i < HISTORY_DEPTH; i++) {
 						history[i][0] = '\0'; 
 						cmdCount = 0;
@@ -445,14 +440,13 @@ int main(int argc, char* argv[])
 				strcpy(input_buffer, history[index]);
 				read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 				execute_command(tokens, in_background, &cmdCount, history, cwd);
-			}
-			else {
+			} else {
 				print_string("Invalid ! command\n");
 			}
 			continue;
 		}
 
-        execute_command(tokens, in_background, &cmdCount, history, cwd);
+        	execute_command(tokens, in_background, &cmdCount, history, cwd);
 
 		/**
 		 * Steps For Basic Shell:
