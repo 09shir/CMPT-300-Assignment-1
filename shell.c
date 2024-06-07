@@ -1,3 +1,6 @@
+// Shell starter file
+// You may make any changes to any part of this file.
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -14,8 +17,6 @@
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
 
 #define HISTORY_DEPTH 10
-
-static volatile sig_atomic_t sigint_received = 0;
 
 /*
  * Tokenize the string in 'buff' into 'tokens'.
@@ -43,7 +44,7 @@ int tokenize_command(char *buff, char *tokens[])
 		if (i>0 && buff[i]=='\\'){
 			for(int j=i; j<num_chars; j++) {
 				buff[j] = buff[j+1];
-			}
+				}
 		}
 		else{
 			switch (buff[i]) {
@@ -222,8 +223,7 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 			// change to the specified directory
 			if(tokens[2] == NULL){
 				change_dir_result = chdir(tokens[1]);
-			}
-			else{
+			} else{
 				print_string("Error: 'cd' is unable to take more than one parameter.\n");
 				return;
 			}
@@ -306,7 +306,6 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 
 void handle_SIGINT(int sig)
 {
-	sigint_received = 1;  
 	print_string("\nCaught SIGINT\n");
 	print_string("'exit' for exiting the program.\n");
 	print_string("'pwd' for displaying the current working directory.\n");
@@ -358,15 +357,11 @@ int main(int argc, char* argv[])
 		char cwd[PATH_MAX];
 
 		if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
-			if (!sigint_received){
-				print_string(cwd);
-				print_string("$ ");
-			} else {
-				sigint_received = 0;
-			}
-	        } else {
-	            perror("getcwd() error");
-	        }
+			print_string(cwd);
+			print_string("$ ");
+        	} else {
+            		perror("getcwd() error");
+        	}
 
 		// Get command
 		// Use write because we need to use read() to work with
@@ -399,7 +394,8 @@ int main(int argc, char* argv[])
 					strcpy(input_buffer, history[index]);
 					read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 					execute_command(tokens, in_background, &cmdCount, history, cwd);
-				} else{
+				}
+				else{
 					print_string("No previous command exist in history\n");
 				}
 				continue;
@@ -409,7 +405,8 @@ int main(int argc, char* argv[])
 				if (tokens[1] != NULL) {
 					print_string("Error: '!-' is unable to take any parameters.\n");
 					continue;
-				} else if (cmdCount > 0) {
+				}
+				else if (cmdCount > 0) {
 					for (int i = 0; i < HISTORY_DEPTH; i++) {
 						history[i][0] = '\0'; 
 						cmdCount = 0;
@@ -440,7 +437,8 @@ int main(int argc, char* argv[])
 				strcpy(input_buffer, history[index]);
 				read_command(input_buffer, tokens, &in_background, history, &cmdCount, false);
 				execute_command(tokens, in_background, &cmdCount, history, cwd);
-			} else {
+			}
+			else {
 				print_string("Invalid ! command\n");
 			}
 			continue;
