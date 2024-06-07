@@ -11,14 +11,14 @@
 #include <ctype.h>
 #include <signal.h>
 #include <unistd.h>
-
-
+#include <errno.h>
 
 #define COMMAND_LENGTH 1024
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
 
 #define HISTORY_DEPTH 10
 
+static volatile sig_atomic_t sigint_received = 0;
 
 /*
  * Tokenize the string in 'buff' into 'tokens'.
@@ -131,7 +131,7 @@ void read_command(char *buff, char *tokens[], _Bool *in_background, char history
 	if (need_input){
 		length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
 
-		if (length < 0) {
+		if (length < 0 && errno != EINTR) {
 			perror("Unable to read command from keyboard. Terminating.\n");
 			exit(-1);
 		}
@@ -309,7 +309,9 @@ void execute_command(char* tokens[], _Bool in_background, int* cmdCount, char hi
 
 void handle_SIGINT(int sig)
 {
-	print_string("\n'exit' for exiting the program.\n");
+	sigint_received = 1;  
+	print_string("\nCaught SIGINT\n");
+	print_string("'exit' for exiting the program.\n");
 	print_string("'pwd' for displaying the current working directory.\n");
 	print_string("'cd' for changing the current working directory.\n");
 	print_string("'help' for displaying the help information on internal command.\n");
@@ -317,6 +319,16 @@ void handle_SIGINT(int sig)
 	print_string("'!n' is an internal command for executing the n-th command from history\n");
 	print_string("'!!' is an internal command for executing the last command from history\n");
 	print_string("'!-' is an internal command for clearing command list history\n");
+
+	// display cwd again
+	char cwd[PATH_MAX];
+
+	if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
+		print_string(cwd);
+		print_string("$ ");
+	} else {
+		perror("getcwd() error");
+	}
 }
 
 /**
@@ -337,16 +349,24 @@ int main(int argc, char* argv[])
     // Set up the signal handler
     struct sigaction handler;
     handler.sa_handler = handle_SIGINT;
-    handler.sa_flags = 0;
+    handler.sa_flags = SA_RESTART;
     sigemptyset(&handler.sa_mask);
-    sigaction(SIGINT, &handler, NULL);
+	if (sigaction(SIGINT, &handler, NULL) == -1) {
+		perror("sigaction");
+		exit(1);
+	}
 
 	while (true) {
 
 		char cwd[PATH_MAX];
 
 		if (getcwd(cwd, sizeof(char) * PATH_MAX) != NULL){
-			print_string(cwd);
+			if (!sigint_received){
+				print_string(cwd);
+				print_string("$ ");
+			} else {
+				sigint_received = 0;
+			}
         } else {
             perror("getcwd() error");
         }
@@ -354,7 +374,6 @@ int main(int argc, char* argv[])
 		// Get command
 		// Use write because we need to use read() to work with
 		// signals, and read() is incompatible with printf().
-		print_string("$ ");
 		_Bool in_background = false;
 		read_command(input_buffer, tokens, &in_background, history, &cmdCount, true);
 
